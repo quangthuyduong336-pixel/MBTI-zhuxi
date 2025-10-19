@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>理学MBTI：格物穷理与心性修养</title>
-    <!-- 引入 Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 设置字体为 Inter，并针对中文提供优雅降级 -->
+    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        /* 引入 Tailwind CSS 的基础 reset 样式和通用工具类 (由 Vercel 部署环境提供，此处无需手动嵌入) */
+        
         body {
-            font-family: 'Inter', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+            /* 使用系统默认字体，如苹方、微软雅黑，稳定且加载快 */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
             background-color: #f7f3e8; /* 浅米色背景，营造古朴感 */
         }
         .container-card {
@@ -45,10 +45,8 @@
 
     <div id="app" class="max-w-4xl mx-auto container-card rounded-xl p-6 sm:p-10 my-8">
         
-        <!-- 动态内容区域 -->
         <div id="content-area">
-            <!-- 内容将由 JavaScript 渲染 -->
-        </div>
+            </div>
     </div>
 
     <script>
@@ -351,7 +349,6 @@
 
             const html = `
                 <div class="space-y-6">
-                    <!-- 进度条 -->
                     <div class="mb-6">
                         <h2 class="text-xl font-semibold text-gray-700 mb-2">
                             ${currentDimension} 维度：${getDimensionTitle(currentDimension)}
@@ -362,22 +359,18 @@
                         </div>
                     </div>
 
-                    <!-- 问题标题 -->
                     <p class="text-2xl font-bold text-gray-900 leading-relaxed">${question.title}</p>
 
-                    <!-- 选项 A -->
                     <div id="choice-A" class="choice-item p-5 rounded-xl border-2 border-gray-300 cursor-pointer ${userAnswers[question.id] === question.A.code ? 'selected' : ''}" data-code="${question.A.code}" data-id="${question.id}" data-dimension="${currentDimension}">
                         <span class="font-semibold text-[#a0522d] text-lg mr-2">A.</span>
                         <span class="text-gray-700">${question.A.text}</span>
                     </div>
 
-                    <!-- 选项 B -->
                     <div id="choice-B" class="choice-item p-5 rounded-xl border-2 border-gray-300 cursor-pointer ${userAnswers[question.id] === question.B.code ? 'selected' : ''}" data-code="${question.B.code}" data-id="${question.id}" data-dimension="${currentDimension}">
                         <span class="font-semibold text-[#a0522d] text-lg mr-2">B.</span>
                         <span class="text-gray-700">${question.B.text}</span>
                     </div>
 
-                    <!-- 导航按钮 -->
                     <div class="flex justify-between pt-6 border-t border-gray-200">
                         <button id="prev-btn" class="px-6 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400 transition duration-300 ${currentStep === 1 ? 'invisible' : ''}">
                             上一题
@@ -404,13 +397,11 @@
                     您的理学人格类型已确立，修养之门由此开启。
                 </p>
 
-                <!-- 结果卡片 -->
                 <div class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl border-4 border-[#a0522d] space-y-6">
                     <h2 class="text-3xl font-bold text-center text-[#5a3e35]">
                         您的类型：${mbtiType} - ${result.name}
                     </h2>
                     
-                    <!-- 维度概览 (可点击) -->
                     <h3 class="text-xl font-semibold text-gray-700 border-t pt-4">点击下方维度查看详细分析：</h3>
                     <div id="dimension-preference-container" class="grid grid-cols-4 gap-2 text-center text-sm font-medium">
                         ${getDimensionPreference('EI', userAnswers)}
@@ -419,12 +410,9 @@
                         ${getDimensionPreference('JP', userAnswers)}
                     </div>
                     
-                    <!-- 新增：内联维度详情区域 -->
                     <div id="dimension-detail-area" class="mt-6 pt-4 border-t border-gray-100">
-                        <!-- 详细信息将在此处内联显示 -->
-                    </div>
+                        </div>
 
-                    <!-- 理学诊断 -->
                     <div class="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-600">
                         <h3 class="text-xl font-semibold text-yellow-800 mb-2 flex items-center">
                            <span class="mr-2">📝</span> 理学诊断：
@@ -432,7 +420,6 @@
                         <p class="text-lg text-gray-700 leading-relaxed">${result.diagnosis}</p>
                     </div>
 
-                    <!-- 修行方案 -->
                     <div class="p-4 rounded-lg bg-green-50 border-l-4 border-green-600">
                         <h3 class="text-xl font-semibold text-green-800 mb-3 flex items-center">
                             <span class="mr-2">🌿</span> 修行方案：对症下药
@@ -480,13 +467,11 @@
                         ${dimensionTitle} 偏好：${data.code} - ${data.name}
                     </p>
 
-                    <!-- 核心概念 -->
                     <div class="bg-gray-50 p-4 rounded-xl border-l-4 border-gray-500">
                         <h4 class="text-lg font-semibold text-gray-800 mb-1">核心概念（性理体认）</h4>
                         <p class="text-base leading-relaxed">${data.concept}</p>
                     </div>
                     
-                    <!-- 理学优势 -->
                     <div class="p-4 rounded-xl border-2 border-green-300 bg-green-50">
                         <h4 class="text-lg font-semibold text-green-800 mb-1 flex items-center">
                             <span class="mr-2">✔️</span> 理学优势（天理所具）
@@ -494,7 +479,6 @@
                         <p class="text-base text-gray-700 leading-relaxed">${data.advantage}</p>
                     </div>
 
-                    <!-- 需警惕的“偏蔽” -->
                     <div class="p-4 rounded-xl border-2 border-red-300 bg-red-50">
                         <h4 class="text-lg font-semibold text-red-800 mb-1 flex items-center">
                             <span class="mr-2">⚠️</span> 需警惕的“偏蔽”（人欲所蔽）
