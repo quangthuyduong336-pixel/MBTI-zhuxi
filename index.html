@@ -33,11 +33,11 @@
             transform: scale(1.02);
         }
 
-        /* 结果页维度块的激活样式 */
+        /* 结果页维度块的激活样式 - 将在 JS 中动态添加颜色，只保留通用激活效果 */
         .dimension-preference.active {
-            border-color: #a0522d;
-            box-shadow: 0 0 0 3px rgba(160, 82, 45, 0.5); /* 环形阴影，突出激活状态 */
+            box-shadow: 0 0 0 3px var(--active-color); /* 使用 CSS 变量来设置动态颜色 */
             transform: scale(1.05);
+            border-color: var(--active-color);
         }
     </style>
 </head>
@@ -55,13 +55,27 @@
         // ----------------------------------------------------
         // 1. 数据定义 (DATA DEFINITION)
         // ----------------------------------------------------
+        
+        // 新增：维度颜色映射
+        const DIMENSION_COLORS = {
+            'EI': { bgA: 'bg-red-200', textA: 'text-red-800', border: '#a83a3a' }, // 红色系 - E
+            'SN': { bgA: 'bg-blue-200', textA: 'text-blue-800', border: '#2563eb' }, // 蓝色系 - S
+            'TF': { bgA: 'bg-green-200', textA: 'text-green-800', border: '#10b981' }, // 绿色系 - T
+            'JP': { bgA: 'bg-purple-200', textA: 'text-purple-800', border: '#8b5cf6' }, // 紫色系 - J
+            // Fallback for I, N, F, P will be the same color family but for the opposite
+            'I': { bg: 'bg-red-100', text: 'text-red-600', border: '#a83a3a' }, 
+            'N': { bg: 'bg-blue-100', text: 'text-blue-600', border: '#2563eb' },
+            'F': { bg: 'bg-green-100', text: 'text-green-600', border: '#10b981' },
+            'P': { bg: 'bg-purple-100', text: 'text-purple-600', border: '#8b5cf6' },
+        };
+
 
         // 理学MBTI测试问题数据
         const questions = [
             {
                 id: 'E-I-1', dimension: 'EI', title: '当你需要深入思考或恢复精力时，你更倾向于：',
-                A: { code: 'E', text: '与志同道合的朋友交流讨论，或在处理具体事务中理清思路。（外向格物）', desc: '外向格物 - E' },
-                B: { code: 'I', text: '独自静处，读书或沉思，通过内省来获得清晰。（内向穷理）', desc: '内向穷理 - I' }
+                A: { code: 'E', text: '与志同道合的朋友交流讨论，或在处理具体事务中理清思路。', desc: '外向格物 - E' },
+                B: { code: 'I', text: '独自静处，读书或沉思，通过内省来获得清晰。', desc: '内向穷理 - I' }
             },
             {
                 id: 'E-I-2', dimension: 'EI', title: '对于“格物致知”的理解，你更认同：',
@@ -70,8 +84,8 @@
             },
             {
                 id: 'S-N-1', dimension: 'SN', title: '你更相信什么样的信息或证据？',
-                A: { code: 'S', text: '确凿的数据、具体的经验、眼前可见的事实。相信“理”在具体的“事”中。（实感察器）', desc: '实感察器 - S' },
-                B: { code: 'N', text: '事物背后的联系、发展的可能性、象征与规律。善于从个别中见普遍“天理”。（直觉观理）', desc: '直觉观理 - N' }
+                A: { code: 'S', text: '确凿的数据、具体的经验、眼前可见的事实。相信“理”在具体的“事”中。', desc: '实感察器 - S' },
+                B: { code: 'N', text: '事物背后的联系、发展的可能性、象征与规律。善于从个别中见普遍“天理”。', desc: '直觉观理 - N' }
             },
             {
                 id: 'S-N-2', dimension: 'SN', title: '当有人描述一个理想（如“天下大同”）时，你首先会：',
@@ -80,18 +94,18 @@
             },
             {
                 id: 'T-F-1', dimension: 'TF', title: '做出重要决定时，你最终的判断更倾向于基于：',
-                A: { code: 'T', text: '客观的逻辑、公平的准则、既定的规则（礼法即天理之节文）。力求“公正无私”。（思考依理）', desc: '思考依理 - T' },
-                B: { code: 'F', text: '对他人情感的体谅、整体的和谐、价值观的共鸣。力求“合情合理”。（情感缘仁）', desc: '情感缘仁 - F' }
+                A: { code: 'T', text: '客观的逻辑、公平的准则、既定的规则（礼法即天理之节文）。力求“公正无私”。', desc: '思考依理 - T' },
+                B: { code: 'F', text: '对他人情感的体谅、整体的和谐、价值观的共鸣。力求“合情合理”。', desc: '情感缘仁 - F' }
             },
             {
                 id: 'T-F-2', dimension: 'TF', title: '对于“存天理，灭人欲”，你更倾向于理解为：',
-                A: { code: 'T', text: '核心是克制不当的私欲，使行为符合普遍的规则与道理（克己复礼）。', desc: '思考依理 - T' },
-                B: { code: 'F', text: '核心是涵养内心的仁爱，由仁心自然生发出善行（仁者爱人）。', desc: '情感缘仁 - F' }
+                A: { code: 'T', text: '核心是克制不当的私欲，使行为符合普遍的规则与道理。', desc: '思考依理 - T' },
+                B: { code: 'F', text: '核心是涵养内心的仁爱，由仁心自然生发出善行。', desc: '情感缘仁 - F' }
             },
             {
                 id: 'J-P-1', dimension: 'JP', title: '你认为哪种生活状态更利于身心修养？',
-                A: { code: 'J', text: '有计划、有秩序、凡事预则立。通过外在的规矩涵养内心的恭敬（居敬穷理）。（判断居敬）', desc: '判断居敬 - J' },
-                B: { code: 'P', text: '灵活、开放、顺应事物的自然发展。在体验中保持警觉与调整（涵养省察）。（感知省察）', desc: '感知省察 - P' }
+                A: { code: 'J', text: '有计划、有秩序、凡事预则立。通过外在的规矩涵养内心的恭敬。', desc: '判断居敬 - J' },
+                B: { code: 'P', text: '灵活、开放、顺应事物的自然发展。在体验中保持警觉与调整。', desc: '感知省察 - P' }
             },
             {
                 id: 'J-P-2', dimension: 'JP', title: '面对一项新任务或旅行，你通常：',
@@ -382,7 +396,7 @@
                         <button id="prev-btn" class="px-6 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400 transition duration-300 ${currentStep === 1 ? 'invisible' : ''}">
                             上一题
                         </button>
-                        <button id="next-btn" class="px-6 py-2 bg-[#5a3e35] text-white font-semibold rounded-lg shadow-md hover:bg-[#3e2c26] transition duration-300 disabled:opacity-50" disabled>
+                        <button id="next-btn" class="px-6 py-2 bg-[#5a3e35] text-white font-semibold rounded-lg shadow-md hover:bg-[#3e2c26] transition duration-300 disabled:opacity-50">
                             ${currentStep === questions.length ? '查看结果' : '下一题'}
                         </button>
                     </div>
@@ -460,17 +474,30 @@
         }
         
         /** 渲染单个维度详情（内联显示） */
-        function showInlineDimensionDetail(preferenceCode) {
+        window.showInlineDimensionDetail = (preferenceCode) => {
             const data = dimensionDetails[preferenceCode];
             const dimensionTitle = getDimension(preferenceCode);
             
+            let dimGroup = '';
+            if (preferenceCode === 'E' || preferenceCode === 'I') dimGroup = 'EI';
+            else if (preferenceCode === 'S' || preferenceCode === 'N') dimGroup = 'SN';
+            else if (preferenceCode === 'T' || preferenceCode === 'F') dimGroup = 'TF';
+            else if (preferenceCode === 'J' || preferenceCode === 'P') dimGroup = 'JP';
+            
+            const colorConfig = DIMENSION_COLORS[dimGroup];
+            const activeColor = colorConfig ? colorConfig.border : '#a0522d';
+
             // 1. 移除所有维度块的激活状态
             document.querySelectorAll('.dimension-preference').forEach(el => {
                 el.classList.remove('active');
             });
 
-            // 2. 激活被点击的维度块
-            document.querySelector(`[data-dim-code="${preferenceCode}"]`)?.classList.add('active');
+            // 2. 激活被点击的维度块并设置 CSS 变量
+            const activeElement = document.querySelector(`[data-dim-code="${preferenceCode}"]`);
+            if (activeElement) {
+                activeElement.style.setProperty('--active-color', activeColor);
+                activeElement.classList.add('active');
+            }
 
 
             // 3. 构造详细信息 HTML
@@ -641,28 +668,40 @@
             const countA = choices.filter(q => answers[q.id] === q.A.code).length;
             const countB = choices.filter(q => answers[q.id] === q.B.code).length;
             
+            const colorConfig = DIMENSION_COLORS[dim];
+
             let code = choices[0].A.code;
             let text = choices[0].A.desc.split(' - ')[0]; // 外向格物
-            let color = 'bg-red-200 text-red-800';
+            let bgColor = colorConfig.bgA;
+            let textColor = colorConfig.textA;
 
+            const codeB = choices[0].B.code;
+            const textB = choices[0].B.desc.split(' - ')[0]; // 内向穷理
+            
+            // 根据哪个代码获得更高的分数来决定最终的代码和颜色
             if (countB > countA) {
-                code = choices[0].B.code;
-                text = choices[0].B.desc.split(' - ')[0]; // 内向穷理
-                color = 'bg-blue-200 text-blue-800';
+                code = codeB;
+                text = textB; 
+                // 反向颜色逻辑：使用 DIMENSION_COLORS[code] 来获取 I, N, F, P 的浅色系
+                const oppositeConfig = DIMENSION_COLORS[code];
+                bgColor = oppositeConfig.bg;
+                textColor = oppositeConfig.text;
             } else if (countA === countB) {
-                // 如果分数相等，默认取第一个字母
+                // 平局时默认取第一个字母
                 code = choices[0].A.code;
                 text = choices[0].A.desc.split(' - ')[0];
-                color = 'bg-gray-200 text-gray-800';
+                bgColor = 'bg-gray-200';
+                textColor = 'text-gray-800';
             }
 
             // 核心改动：调用内联显示函数，并添加数据属性用于激活状态
             return `
                 <div 
-                    class="dimension-preference p-2 rounded-lg ${color} shadow-sm cursor-pointer hover:shadow-lg transition duration-200 border-2 border-transparent" 
+                    class="dimension-preference p-2 rounded-lg ${bgColor} ${textColor} shadow-sm cursor-pointer hover:shadow-lg transition duration-200 border-2 border-transparent" 
                     onclick="showInlineDimensionDetail('${code}')"
                     data-dim-code="${code}"
                     data-dimension-group="${dim}"
+                    style="border-color: ${colorConfig.border};"
                 >
                     <div class="font-bold text-lg">${code}</div>
                     <div class="text-xs">${text}</div>
