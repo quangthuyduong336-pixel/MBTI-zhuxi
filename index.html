@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>理学MBTI：格物穷理与心性修养</title>
+    <!-- 引入 Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 设置字体为 Inter，并针对中文提供优雅降级 -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+            background-color: #f7f3e8; /* 浅米色背景，营造古朴感 */
+        }
+        .container-card {
+            background-color: #ffffff;
+            border: 1px solid #e0d9c4;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        /* 针对选项卡 hover 效果 */
+        .choice-item {
+            transition: all 0.2s ease-in-out;
+        }
+        .choice-item:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transform: translateY(-2px);
+        }
+        /* 选中状态的样式 */
+        .choice-item.selected {
+            border-color: #a0522d; /* 铜棕色边框 */
+            background-color: #fffaf0; /* 略微发白的背景 */
+            transform: scale(1.02);
+        }
+
+        /* 结果页维度块的激活样式 */
+        .dimension-preference.active {
+            border-color: #a0522d;
+            box-shadow: 0 0 0 3px rgba(160, 82, 45, 0.5); /* 环形阴影，突出激活状态 */
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8 min-h-screen">
+
+    <div id="app" class="max-w-4xl mx-auto container-card rounded-xl p-6 sm:p-10 my-8">
+        
+        <!-- 动态内容区域 -->
+        <div id="content-area">
+            <!-- 内容将由 JavaScript 渲染 -->
+        </div>
+    </div>
+
+    <script>
+        // ----------------------------------------------------
+        // 1. 数据定义 (DATA DEFINITION)
+        // ----------------------------------------------------
+
+        // 理学MBTI测试问题数据
+        const questions = [
+            {
+                id: 'E-I-1', dimension: 'EI', title: '当你需要深入思考或恢复精力时，你更倾向于：',
+                A: { code: 'E', text: '与志同道合的朋友交流讨论，或在处理具体事务中理清思路。（外向格物）', desc: '外向格物 - E' },
+                B: { code: 'I', text: '独自静处，读书或沉思，通过内省来获得清晰。（内向穷理）', desc: '内向穷理 - I' }
+            },
+            {
+                id: 'E-I-2', dimension: 'EI', title: '对于“格物致知”的理解，你更认同：',
+                A: { code: 'E', text: '知识在与人、事、物的广泛互动中愈辩愈明，需“今日格一物，明日格一物”。', desc: '外向格物 - E' },
+                B: { code: 'I', text: '真知需沉潜体认，先立其大者，内心通透方能照见外物之理。', desc: '内向穷理 - I' }
+            },
+            {
+                id: 'S-N-1', dimension: 'SN', title: '你更相信什么样的信息或证据？',
+                A: { code: 'S', text: '确凿的数据、具体的经验、眼前可见的事实。相信“理”在具体的“事”中。（实感察器）', desc: '实感察器 - S' },
+                B: { code: 'N', text: '事物背后的联系、发展的可能性、象征与规律。善于从个别中见普遍“天理”。（直觉观理）', desc: '直觉观理 - N' }
+            },
+            {
+                id: 'S-N-2', dimension: 'SN', title: '当有人描述一个理想（如“天下大同”）时，你首先会：',
+                A: { code: 'S', text: '思考实现它的具体步骤、现实成本与可能遇到的问题，要求“下学而上达”。', desc: '实感察器 - S' },
+                B: { code: 'N', text: '探究其背后的宏大愿景与哲学意义，欣赏其“一理摄万理”的洞察力。', desc: '直觉观理 - N' }
+            },
+            {
+                id: 'T-F-1', dimension: 'TF', title: '做出重要决定时，你最终的判断更倾向于基于：',
+                A: { code: 'T', text: '客观的逻辑、公平的准则、既定的规则（礼法即天理之节文）。力求“公正无私”。（思考依理）', desc: '思考依理 - T' },
+                B: { code: 'F', text: '对他人情感的体谅、整体的和谐、价值观的共鸣。力求“合情合理”。（情感缘仁）', desc: '情感缘仁 - F' }
+            },
+            {
+                id: 'T-F-2', dimension: 'TF', title: '对于“存天理，灭人欲”，你更倾向于理解为：',
+                A: { code: 'T', text: '核心是克制不当的私欲，使行为符合普遍的规则与道理（克己复礼）。', desc: '思考依理 - T' },
+                B: { code: 'F', text: '核心是涵养内心的仁爱，由仁心自然生发出善行（仁者爱人）。', desc: '情感缘仁 - F' }
+            },
+            {
+                id: 'J-P-1', dimension: 'JP', title: '你认为哪种生活状态更利于身心修养？',
+                A: { code: 'J', text: '有计划、有秩序、凡事预则立。通过外在的规矩涵养内心的恭敬（居敬穷理）。（判断居敬）', desc: '判断居敬 - J' },
+                B: { code: 'P', text: '灵活、开放、顺应事物的自然发展。在体验中保持警觉与调整（涵养省察）。（感知省察）', desc: '感知省察 - P' }
+            },
+            {
+                id: 'J-P-2', dimension: 'JP', title: '面对一项新任务或旅行，你通常：',
+                A: { code: 'J', text: '希望尽快明确目标与步骤，有章可循的心才安定。', desc: '判断居敬 - J' },
+                B: { code: 'P', text: '乐于保持开放性，随遇而安，根据情况灵活应对。', desc: '感知省察 - P' }
+            }
+        ];
+
+        // 16种人格类型的理学诊断与修行方案数据
+        const mbtiData = {
+            ISTJ: {
+                name: '稽查员型', diagnosis: '忠诚的规则守护者，但易“执器而忘理”，过于严苛而失却仁心。',
+                solutions: [
+                    '每日一仁：在执行规则前，先自问：“此做法是否出于公心仁术？” 尝试一次“法外开恩”（在原则允许下）。',
+                    '格物新知：主动学习一项看似与现有体系无关的新知识，体会“万理一源”的豁达。',
+                    '静坐观心：每日静坐10分钟，不想具体事务，只观察内心情绪流动，体会“心之本体”。'
+                ]
+            },
+            ISFJ: {
+                name: '守护者型', diagnosis: '仁心细致，但易“徇情枉理”，为维护小范围和谐而牺牲原则。',
+                solutions: [
+                    '明理为先：在答应他人请求前，先冷静判断此事是否合“理”（正确），而非只合“情”。',
+                    '扩宽仁境：将关怀从身边人扩展到社群乃至陌生人，体会“民吾同胞，物吾与也”的胸怀。',
+                    '学习拒礼：练习有礼貌地拒绝不合宜的请求，做到“和而不同”。'
+                ]
+            },
+            ESTJ: {
+                name: '总经理型', diagnosis: '高效的实务家，但易“恃气而求理”，重外在事功而轻内在涵养。',
+                solutions: [
+                    '主敬涵养：每日安排15分钟独处，放下事务，仅“主一无适”，让心回归平静。',
+                    '换位穷理：做决策前，强制自己从反对者的角度思考一遍，格其“理”之所在。',
+                    '慎言克己：开会或发言时，刻意让自己最后一个发言，练习倾听与克制。'
+                ]
+            },
+            ESFJ: {
+                name: '执政官型', diagnosis: '和谐的营造者，但易“为人而伪”，过度在意外界评价，失去自我真性。',
+                solutions: [
+                    '反躬自问：在忙碌于社交后，自问：“我这样做是出于天理之本然，还是人欲之私心？”',
+                    '独处习静：定期给自己安排“独处日”，在孤独中找回内心的安定（“仁者静”）。',
+                    '深读经典：精读一本经典（如《大学》），不求速，求每一句的切身理解，以义理养心。'
+                ]
+            },
+            ISTP: {
+                name: '鉴赏家型', diagnosis: '冷静的工匠，但易“玩物丧志”，沉迷技术细节而疏于人际仁理的修养。',
+                solutions: [
+                    '习礼养敬：学习并实践一项传统礼仪（如茶道、书法），在规矩中涵养“敬”心。',
+                    '主动合群：每周主动参与一次有益的集体活动，格“人群相处”之理。',
+                    '述而不作：尝试将你精通的技能背后的“道理”清晰地讲给外人听，逼自己“穷理”。'
+                ]
+            },
+            ISFP: {
+                name: '艺术家型', diagnosis: '温和的审美家，但易“流于情绪”，避世散漫，缺乏对“理”的刚性坚持。',
+                solutions: [
+                    '立志向道：为自己确立一个超越个人喜好的、利他的小目标，并持之以恒。',
+                    '日用即道：将日常起居（打扫、整理）视为修养“敬”心的道场，事事物物皆有理。',
+                    '以理节情：当情绪波动时，不急反应，先自问：“此时的天理（正确的做法）是什么？”'
+                ]
+            },
+            ESTP: {
+                name: '企业家型', diagnosis: '敏锐的行动派，但易“义袭而取”，凭小聪明处事，缺乏深厚根基。',
+                solutions: [
+                    '守静存诚：每日必须静坐5分钟，收敛向外追逐的心，体验“诚”的本体。',
+                    '深读一书：选择一本经典（如《论语》），细细读完，并写下心得，切忌贪多嚼不烂。',
+                    '慎于言机：在开玩笑或展示机锋前，思考三秒，此言是否“中和”，是否合乎“礼”。'
+                ]
+            },
+            ESFP: {
+                name: '表演者型', diagnosis: '热情的体验者，但易“放逸其心”，完全为外界反应所牵引，内心空寂。',
+                solutions: [
+                    '主一为敬：每天设定一段“勿扰”时间，专心做一件事（如读书），训练专注力。',
+                    '记功过格：每日睡前简略记录一件“合于理”的好事和一件“徇于欲”的偏事，用以省察。',
+                    '养浩然之气：尝试进行需要耐力的活动（长跑、徒步），磨练意志，体会“持志”的感觉。'
+                ]
+            },
+            INTJ: {
+                name: '战略家型', diagnosis: '深刻的架构师，但易“理悬空虚”，构建空中楼阁，疏于具体实践与人情。',
+                solutions: [
+                    '事上磨练：将一个大计划拆解，亲自完成其中最枯燥的一个环节，格“下学”之理。',
+                    '体贴人情：主动关心一位亲友的具体感受，而非提供解决方案，练习“己所不欲，勿施于人”。',
+                    '随俗涵养：参与一次传统的家庭或社群仪式，体会“礼”背后活生生的情感与天理。'
+                ]
+            },
+            INTP: {
+                name: '学者型', diagnosis: '逻辑的探索者，但易“陷入空理”，为求知而求知，缺乏对现实的关怀与担当。',
+                solutions: [
+                    '笃行近仁：选择一个确信的小道理（如环保），立刻开始行动，在行动中体会“仁”。',
+                    '守约施博：将广博的兴趣收敛一隅，深耕一个领域直至产出实用成果，完成“知行循环”。',
+                    '克除傲气：主动向一位你认为“不如己”的人请教一个具体问题，格“三人行必有我师”之理。'
+                ]
+            },
+            ENTJ: {
+                name: '指挥官型', diagnosis: '强大的组织者，但易“气强理弱”，用个人意志代替客观天理，忽视他人。',
+                solutions: [
+                    '舍己从人：在决策中，尝试一次完全采纳团队的意见并全力执行，体会“毋意、毋必”。',
+                    '主敬收敛：每日安排时间，放下掌控欲，只是倾听，让心回归“虚明”状态。',
+                    '格物求仁：深入研究一位伟大仁者（如孔子、王阳明）的生平，体会“仁”与“智”的统一。'
+                ]
+            },
+            ENTP: {
+                name: '辩论家型', diagnosis: '敏捷的发明家，但易“逐理而忘敬”，为辩论而辩论，缺乏对道的敬畏。',
+                solutions: [
+                    '慎言求道：在发表观点前，自问此言之目的为“求道”还是“求胜”？刻意练习倾听。',
+                    '沉潜涵泳：精读一部经典，反复诵读体会，不求新解，但求与古人之心相印证。',
+                    '习劳养德：参与一项需要耐心和体力的劳动（如园艺、义工），在实在中锚定心神。'
+                ]
+            },
+            INFJ: {
+                name: '提倡者型', diagnosis: '深刻的引路人，但易“自信其心”，过于相信内心直觉，可能脱离现实常理。',
+                solutions: [
+                    '即物穷理：针对一个理想，去研究其相关的所有现实数据与案例，让理想建立在实理上。',
+                    '克治独知：严厉审视那些看似“高尚”的动机背后，是否有微小的自私（求名、自恋）。',
+                    '循礼而动：尝试一段时间严格按常识和礼节行事，而非完全跟随内心感觉，体会“礼”即“理”。'
+                ]
+            },
+            INFP: {
+                name: '调停者型', diagnosis: '真诚的求道者，但易“宽恕情多”，因过度包容与自我而缺乏对外在“理”的坚持。',
+                solutions: [
+                    '矫枉克己：为自己确立一条不可逾越的刚性原则（如守时），并严格恪守，磨练“毅”。',
+                    '格致实学：深入学习一门有严格体系的技能或科学，用客观知识来平衡主观情感。',
+                    '扩然而大：将对他人的同情，转化为一次具体的、有计划的利他行动，做到“知行合一”。'
+                ]
+            },
+            ENFJ: {
+                name: '主人公型', diagnosis: '有感染力的导师，但易“以情为理”，为了激励他人或维持和谐而模糊了真理。',
+                solutions: [
+                    '慎独之功：在独处时，诚实地记录自己的念头，区分何者为“天理”，何者为“人欲”（如虚荣）。',
+                    '刚健中正：在需要时，勇于发表不受欢迎但合乎道理的意见，做到“和而不同”。',
+                    '读书穷理：精读一本理学经典（如《近思录》），用严肃的义理构建自己说教的根基。'
+                ]
+            },
+            ENFP: {
+                name: '竞选者型', diagnosis: '热情的启发者，但易“心荡难收”，兴趣过于发散，难以深入和持守。',
+                solutions: [
+                    '居敬持志：确立一个核心志向，所有活动都围绕其展开，用“敬”来收敛发散的能量。',
+                    '深耕一隅：选择一项最有意义的爱好或技能，设定目标，坚持钻研一年以上，格“惟精惟一”之理。',
+                    '静坐收心：每日坚持静坐，不追求灵感，只数呼吸，训练心灵的专注与稳定。'
+                ]
+            }
+        };
+
+        // 新增：单个维度偏好的详细解读数据
+        const dimensionDetails = {
+            // EI Dimension
+            E: {
+                code: 'E', name: '外向格物', concept: '您的“格物”之门向外敞开。您倾向于在与外界人事物的广泛互动中来探究天理。',
+                advantage: '善于在复杂的人际和事态中把握“分殊之理”，实践能力强，易于将学问付诸行动（“力行”）。',
+                disadvantage: '易“逐物而不返”，即过度追逐外在的人和事，可能缺乏深度的内心涵养与沉潜体认，导致对内在的“本然之性”体察不足。',
+            },
+            I: {
+                code: 'I', name: '内向穷理', concept: '您的“格物”之门向内深锁。您倾向于通过独处、静坐、读书和内省来穷究天理。',
+                advantage: '善于进行深度的“涵养”功夫，对心性本体有更敏锐的觉察，易于达到“心与理一”的内心境界。',
+                disadvantage: '易“枯守内心而遗外物”，即可能过于注重内省而疏于在具体事务上磨练，导致所学之理与现实世界脱节。',
+            },
+            // SN Dimension
+            S: {
+                code: 'S', name: '实感察器', concept: '您的“察识”之眼聚焦于具体、实在和确凿的经验。您相信“理”在具体的“事”与“器”中。',
+                advantage: '根基扎实，观察入微，注重“下学”的功夫，不空谈虚理，所言所行皆有依据。',
+                disadvantage: '易“执器而忘理”，即过于沉迷于具体细节和现实数据，可能难以超脱出来把握事物背后普遍的、共通的“天理”。',
+            },
+            N: {
+                code: 'N', name: '直觉观理', concept: '您的“察识”之眼能穿透表象，洞察背后的联系、可能性和象征意义。您善于从个别事例中看到普遍规律。',
+                advantage: '富有远见，善于把握大本大源，能够将看似不相关的事物联系起来，进行理论创新和体系构建。',
+                disadvantage: '易“理障于心”，即可能过于依赖直觉和理论推演，忽视扎实的经验证据和现实约束，使理论成为空中楼阁。',
+            },
+            // TF Dimension
+            T: {
+                code: 'T', name: '思考依理', concept: '您的“权衡”之尺是客观的逻辑、公平的准则和既定的规则（礼法）。决策时力求“公正无私”。',
+                advantage: '决策公正，原则性强，善于进行逻辑分析，维护规则的严肃性。',
+                disadvantage: '易“刻薄而不近人情”，即过度强调规则的刚性，可能忽视具体情境和人的情感需求，显得缺乏温度与仁爱之心。',
+            },
+            F: {
+                code: 'F', name: '情感缘仁', concept: '您的“权衡”之尺更注重和谐的人际关系、对他人情感的体谅和价值观的共鸣。力求“合情合理”。',
+                advantage: '富有人情味，善于体察他人，促进和谐，决策时能考虑到人的因素，体现了“仁”的关怀。',
+                disadvantage: '易“徇情而枉理”，即为了维护和谐或顾及情面，可能牺牲原则和客观道理，导致“乡愿”或决策有失公允。',
+            },
+            // JP Dimension
+            J: {
+                code: 'J', name: '判断居敬', concept: '您通过计划、秩序和决断来践行“持敬”。您认为有规律、有准备的生活能更好地涵养内心的恭敬（居敬穷理）。',
+                advantage: '生活有序，执行力强，能够通过外在的规矩有效收敛心神，涵养“主一”之敬。',
+                disadvantage: '易“拘泥而不知变通”，即过于执着于计划和秩序，可能无法灵活应对变化，失去了“时中”的智慧。',
+            },
+            P: {
+                code: 'P', name: '感知省察', concept: '您通过在开放、灵活和体验中保持警觉来践行“省察”。您乐于随遇而安，顺应事物的自然发展。',
+                advantage: '适应性强，心态开放，能敏锐地感知环境变化，善于在体验中学习和调整。',
+                disadvantage: '易“散漫而难持志”，即可能因过于随性而缺乏恒心和定力，难以坚守长期目标，偏离了“敬”字所需的专注。',
+            }
+        };
+
+
+        // 当前用户答案存储
+        let userAnswers = {}; // { EI: 'E', SN: 'N', TF: 'F', JP: 'J' }
+        let currentStep = 0; // 0: Intro, 1-8: Questions, 9: Result
+
+        // ----------------------------------------------------
+        // 2. 渲染函数 (RENDERING FUNCTIONS)
+        // ----------------------------------------------------
+
+        /** 渲染介绍页面 */
+        function renderIntro() {
+            const html = `
+                <h1 class="text-4xl sm:text-5xl font-extrabold text-[#a0522d] mb-4 text-center tracking-wider">
+                    理学MBTI：心性修养诊断
+                </h1>
+                <p class="text-lg sm:text-xl text-gray-700 mb-8 text-center border-b pb-4 border-[#e0d9c4]">
+                    融合现代MBTI与朱子理学，探寻您的“格物穷理”与“涵养省察”之路。
+                </p>
+
+                <div class="space-y-6 text-gray-800">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h2 class="text-2xl font-semibold text-[#5a3e35] mb-2">什么是理学MBTI？</h2>
+                        <p class="leading-relaxed">本诊断将您的心理偏好（MBTI维度）与理学中的核心概念相结合，为您提供一套个性化的心性修养方案，帮助您更好地“存天理、去人欲”，以达“知行合一”的境界。</p>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="p-4 rounded-lg bg-red-50 border-l-4 border-[#a0522d]">
+                            <p class="font-bold text-[#a0522d]">能量取向 (E/I)</p>
+                            <p class="text-sm text-gray-600">您的“格物”之门：外向格物 vs 内向穷理</p>
+                        </div>
+                        <div class="p-4 rounded-lg bg-blue-50 border-l-4 border-[#5a3e35]">
+                            <p class="font-bold text-[#5a3e35]">认知方式 (S/N)</p>
+                            <p class="text-sm text-gray-600">您的“察识”之眼：实感察器 vs 直觉观理</p>
+                        </div>
+                        <div class="p-4 rounded-lg bg-green-50 border-l-4 border-[#a0522d]">
+                            <p class="font-bold text-[#a0522d]">决策方式 (T/F)</p>
+                            <p class="text-sm text-gray-600">您的“权衡”之尺：思考依理 vs 情感缘仁</p>
+                        </div>
+                        <div class="p-4 rounded-lg bg-yellow-50 border-l-4 border-[#5a3e35]">
+                            <p class="font-bold text-[#5a3e35]">处世态度 (J/P)</p>
+                            <p class="text-sm text-gray-600">您的“持敬”之态：判断居敬 vs 感知省察</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="start-test" class="w-full mt-10 py-3 bg-[#a0522d] text-white font-bold text-xl rounded-lg shadow-lg hover:bg-[#8b4513] transition duration-300">
+                    开始诊断：叩问心性
+                </button>
+            `;
+            document.getElementById('content-area').innerHTML = html;
+            document.getElementById('start-test').addEventListener('click', () => {
+                currentStep = 1;
+                renderQuestion();
+            });
+        }
+
+        /** 渲染测试问题页面 */
+        function renderQuestion() {
+            if (currentStep > questions.length) {
+                calculateResult();
+                return;
+            }
+
+            const qIndex = currentStep - 1;
+            const question = questions[qIndex];
+            const currentDimension = question.dimension;
+
+            const progress = Math.round((qIndex / questions.length) * 100);
+
+            const html = `
+                <div class="space-y-6">
+                    <!-- 进度条 -->
+                    <div class="mb-6">
+                        <h2 class="text-xl font-semibold text-gray-700 mb-2">
+                            ${currentDimension} 维度：${getDimensionTitle(currentDimension)}
+                            <span class="text-base text-[#a0522d] ml-2">(${currentStep}/${questions.length} 题)</span>
+                        </h2>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="bg-[#a0522d] h-2.5 rounded-full" style="width: ${progress}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- 问题标题 -->
+                    <p class="text-2xl font-bold text-gray-900 leading-relaxed">${question.title}</p>
+
+                    <!-- 选项 A -->
+                    <div id="choice-A" class="choice-item p-5 rounded-xl border-2 border-gray-300 cursor-pointer ${userAnswers[question.id] === question.A.code ? 'selected' : ''}" data-code="${question.A.code}" data-id="${question.id}" data-dimension="${currentDimension}">
+                        <span class="font-semibold text-[#a0522d] text-lg mr-2">A.</span>
+                        <span class="text-gray-700">${question.A.text}</span>
+                    </div>
+
+                    <!-- 选项 B -->
+                    <div id="choice-B" class="choice-item p-5 rounded-xl border-2 border-gray-300 cursor-pointer ${userAnswers[question.id] === question.B.code ? 'selected' : ''}" data-code="${question.B.code}" data-id="${question.id}" data-dimension="${currentDimension}">
+                        <span class="font-semibold text-[#a0522d] text-lg mr-2">B.</span>
+                        <span class="text-gray-700">${question.B.text}</span>
+                    </div>
+
+                    <!-- 导航按钮 -->
+                    <div class="flex justify-between pt-6 border-t border-gray-200">
+                        <button id="prev-btn" class="px-6 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400 transition duration-300 ${currentStep === 1 ? 'invisible' : ''}">
+                            上一题
+                        </button>
+                        <button id="next-btn" class="px-6 py-2 bg-[#5a3e35] text-white font-semibold rounded-lg shadow-md hover:bg-[#3e2c26] transition duration-300 disabled:opacity-50" disabled>
+                            ${currentStep === questions.length ? '查看结果' : '下一题'}
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('content-area').innerHTML = html;
+            attachQuestionListeners();
+            updateNextButtonState();
+        }
+
+        /** 渲染结果页面 */
+        function renderResult(mbtiType, result) {
+            const finalType = calculateFinalType(); // 确保总结果的计算是最新的
+            const resultHtml = `
+                <h1 class="text-4xl sm:text-5xl font-extrabold text-[#a0522d] mb-4 text-center tracking-wider">
+                    心性诊断结果
+                </h1>
+                <p class="text-xl text-gray-700 mb-8 text-center border-b pb-4 border-[#e0d9c4]">
+                    您的理学人格类型已确立，修养之门由此开启。
+                </p>
+
+                <!-- 结果卡片 -->
+                <div class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl border-4 border-[#a0522d] space-y-6">
+                    <h2 class="text-3xl font-bold text-center text-[#5a3e35]">
+                        您的类型：${mbtiType} - ${result.name}
+                    </h2>
+                    
+                    <!-- 维度概览 (可点击) -->
+                    <h3 class="text-xl font-semibold text-gray-700 border-t pt-4">点击下方维度查看详细分析：</h3>
+                    <div id="dimension-preference-container" class="grid grid-cols-4 gap-2 text-center text-sm font-medium">
+                        ${getDimensionPreference('EI', userAnswers)}
+                        ${getDimensionPreference('SN', userAnswers)}
+                        ${getDimensionPreference('TF', userAnswers)}
+                        ${getDimensionPreference('JP', userAnswers)}
+                    </div>
+                    
+                    <!-- 新增：内联维度详情区域 -->
+                    <div id="dimension-detail-area" class="mt-6 pt-4 border-t border-gray-100">
+                        <!-- 详细信息将在此处内联显示 -->
+                    </div>
+
+                    <!-- 理学诊断 -->
+                    <div class="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-600">
+                        <h3 class="text-xl font-semibold text-yellow-800 mb-2 flex items-center">
+                           <span class="mr-2">📝</span> 理学诊断：
+                        </h3>
+                        <p class="text-lg text-gray-700 leading-relaxed">${result.diagnosis}</p>
+                    </div>
+
+                    <!-- 修行方案 -->
+                    <div class="p-4 rounded-lg bg-green-50 border-l-4 border-green-600">
+                        <h3 class="text-xl font-semibold text-green-800 mb-3 flex items-center">
+                            <span class="mr-2">🌿</span> 修行方案：对症下药
+                        </h3>
+                        <ul class="list-disc list-inside space-y-2 pl-4 text-gray-700">
+                            ${result.solutions.map(sol => `<li class="leading-relaxed">${sol}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+
+                <button id="restart-btn" class="w-full mt-10 py-3 bg-gray-500 text-white font-bold text-xl rounded-lg shadow-lg hover:bg-gray-600 transition duration-300">
+                    重新诊断：再问心性
+                </button>
+            `;
+            document.getElementById('content-area').innerHTML = resultHtml;
+            document.getElementById('restart-btn').addEventListener('click', () => {
+                currentStep = 0;
+                userAnswers = {};
+                renderIntro();
+            });
+
+            // 初始化：默认显示第一个维度（E/I 的偏好）的详细信息
+            const initialPreference = finalType.charAt(0);
+            showInlineDimensionDetail(initialPreference);
+        }
+        
+        /** 渲染单个维度详情（内联显示） */
+        function showInlineDimensionDetail(preferenceCode) {
+            const data = dimensionDetails[preferenceCode];
+            const dimensionTitle = getDimension(preferenceCode);
+            
+            // 1. 移除所有维度块的激活状态
+            document.querySelectorAll('.dimension-preference').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            // 2. 激活被点击的维度块
+            document.querySelector(`[data-dim-code="${preferenceCode}"]`)?.classList.add('active');
+
+
+            // 3. 构造详细信息 HTML
+            const html = `
+                <div class="space-y-4">
+                    <p class="text-2xl font-bold text-[#5a3e35] text-center mb-4 border-b pb-2">
+                        ${dimensionTitle} 偏好：${data.code} - ${data.name}
+                    </p>
+
+                    <!-- 核心概念 -->
+                    <div class="bg-gray-50 p-4 rounded-xl border-l-4 border-gray-500">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-1">核心概念（性理体认）</h4>
+                        <p class="text-base leading-relaxed">${data.concept}</p>
+                    </div>
+                    
+                    <!-- 理学优势 -->
+                    <div class="p-4 rounded-xl border-2 border-green-300 bg-green-50">
+                        <h4 class="text-lg font-semibold text-green-800 mb-1 flex items-center">
+                            <span class="mr-2">✔️</span> 理学优势（天理所具）
+                        </h4>
+                        <p class="text-base text-gray-700 leading-relaxed">${data.advantage}</p>
+                    </div>
+
+                    <!-- 需警惕的“偏蔽” -->
+                    <div class="p-4 rounded-xl border-2 border-red-300 bg-red-50">
+                        <h4 class="text-lg font-semibold text-red-800 mb-1 flex items-center">
+                            <span class="mr-2">⚠️</span> 需警惕的“偏蔽”（人欲所蔽）
+                        </h4>
+                        <p class="text-base text-gray-700 leading-relaxed">${data.disadvantage}</p>
+                    </div>
+                </div>
+            `;
+            // 4. 将 HTML 插入到内联区域
+            document.getElementById('dimension-detail-area').innerHTML = html;
+        }
+
+        // ----------------------------------------------------
+        // 3. 逻辑函数 (LOGIC FUNCTIONS)
+        // ----------------------------------------------------
+        
+        /** 计算最终的MBTI类型 (提取为可复用函数) */
+        function calculateFinalType() {
+             return ['EI', 'SN', 'TF', 'JP'].map(dimension => {
+                const choices = questions.filter(q => q.dimension === dimension);
+                const counts = choices.reduce((acc, q) => {
+                    const answer = userAnswers[q.id];
+                    if (answer) {
+                        acc[answer] = (acc[answer] || 0) + 1;
+                    }
+                    return acc;
+                }, {});
+
+                // 平局时默认取第一个字母 (E, S, T, J)
+                if (dimension === 'EI') return (counts['E'] > counts['I']) ? 'E' : (counts['I'] > counts['E'] ? 'I' : 'E');
+                if (dimension === 'SN') return (counts['S'] > counts['N']) ? 'S' : (counts['N'] > counts['S'] ? 'N' : 'S');
+                if (dimension === 'TF') return (counts['T'] > counts['F']) ? 'T' : (counts['F'] > counts['T'] ? 'F' : 'T');
+                if (dimension === 'JP') return (counts['J'] > counts['P']) ? 'J' : (counts['P'] > counts['J'] ? 'P' : 'J');
+                return '';
+            }).join('');
+        }
+        
+        /** 附加问题页面的事件监听器 */
+        function attachQuestionListeners() {
+            const choices = document.querySelectorAll('.choice-item');
+            choices.forEach(choice => {
+                choice.addEventListener('click', handleChoiceClick);
+            });
+
+            document.getElementById('prev-btn')?.addEventListener('click', handlePrevClick);
+            document.getElementById('next-btn')?.addEventListener('click', handleNextClick);
+        }
+
+        /** 处理选项点击事件 */
+        function handleChoiceClick(event) {
+            const clickedElement = event.currentTarget;
+            const questionId = clickedElement.dataset.id;
+            const selectedCode = clickedElement.dataset.code;
+            const dimension = clickedElement.dataset.dimension;
+
+            // 移除同维度问题的选择状态
+            document.querySelectorAll(`[data-id="${questionId}"]`).forEach(el => {
+                el.classList.remove('selected', 'border-[#a0522d]', 'bg-white');
+                el.classList.add('border-gray-300', 'bg-white');
+            });
+
+            // 设置当前选项为选中状态
+            clickedElement.classList.add('selected', 'border-[#a0522d]', 'bg-white');
+            clickedElement.classList.remove('border-gray-300');
+
+            // 存储答案
+            userAnswers[questionId] = selectedCode;
+            
+            // 检查是否所有同维度问题都已回答
+            updateNextButtonState();
+        }
+
+        /** 更新“下一题/查看结果”按钮状态 */
+        function updateNextButtonState() {
+            const nextBtn = document.getElementById('next-btn');
+            if (!nextBtn) return;
+
+            const qIndex = currentStep - 1;
+            const question = questions[qIndex];
+
+            // 检查当前问题是否有答案
+            const hasAnswer = userAnswers.hasOwnProperty(question.id);
+
+            nextBtn.disabled = !hasAnswer;
+        }
+
+        /** 处理“下一题”点击事件 */
+        function handleNextClick() {
+            // 确保当前题已回答
+            const qIndex = currentStep - 1;
+            const question = questions[qIndex];
+            if (!userAnswers.hasOwnProperty(question.id)) {
+                // 使用一个自定义消息框替代 alert()
+                showMessageBox('请先选择一个答案。');
+                return;
+            }
+
+            currentStep++;
+            renderQuestion();
+        }
+
+        /** 处理“上一题”点击事件 */
+        function handlePrevClick() {
+            if (currentStep > 1) {
+                currentStep--;
+                renderQuestion();
+            }
+        }
+
+        /** 计算最终的MBTI类型并渲染结果页 */
+        function calculateResult() {
+            const finalType = calculateFinalType();
+            const result = mbtiData[finalType];
+            if (result) {
+                renderResult(finalType, result);
+            } else {
+                renderError('计算结果失败，请检查是否所有问题都已回答。');
+            }
+        }
+
+        /** 获取维度名称 */
+        function getDimensionTitle(dim) {
+            switch(dim) {
+                case 'EI': return '能量取向 - “格物”之门';
+                case 'SN': return '认知方式 - “察识”之眼';
+                case 'TF': return '决策方式 - “权衡”之尺';
+                case 'JP': return '处世态度 - “持敬”之态';
+                default: return '';
+            }
+        }
+        
+        /** Helper function to get the full dimension name by code */
+        function getDimension(code) {
+             if (code === 'E' || code === 'I') return '能量取向 (E/I)';
+             if (code === 'S' || code === 'N') return '认知方式 (S/N)';
+             if (code === 'T' || code === 'F') return '决策方式 (T/F)';
+             if (code === 'J' || code === 'P') return '处世态度 (J/P)';
+             return '';
+        }
+        
+        /** 格式化维度偏好展示（并添加点击事件） */
+        function getDimensionPreference(dim, answers) {
+            const choices = questions.filter(q => q.dimension === dim);
+            const countA = choices.filter(q => answers[q.id] === q.A.code).length;
+            const countB = choices.filter(q => answers[q.id] === q.B.code).length;
+            
+            let code = choices[0].A.code;
+            let text = choices[0].A.desc.split(' - ')[0]; // 外向格物
+            let color = 'bg-red-200 text-red-800';
+
+            if (countB > countA) {
+                code = choices[0].B.code;
+                text = choices[0].B.desc.split(' - ')[0]; // 内向穷理
+                color = 'bg-blue-200 text-blue-800';
+            } else if (countA === countB) {
+                // 如果分数相等，默认取第一个字母
+                code = choices[0].A.code;
+                text = choices[0].A.desc.split(' - ')[0];
+                color = 'bg-gray-200 text-gray-800';
+            }
+
+            // 核心改动：调用内联显示函数，并添加数据属性用于激活状态
+            return `
+                <div 
+                    class="dimension-preference p-2 rounded-lg ${color} shadow-sm cursor-pointer hover:shadow-lg transition duration-200 border-2 border-transparent" 
+                    onclick="showInlineDimensionDetail('${code}')"
+                    data-dim-code="${code}"
+                    data-dimension-group="${dim}"
+                >
+                    <div class="font-bold text-lg">${code}</div>
+                    <div class="text-xs">${text}</div>
+                </div>
+            `;
+        }
+
+
+        /** 显示自定义消息框（替代 alert） */
+        function showMessageBox(message) {
+            const existingBox = document.getElementById('message-box');
+            if (existingBox) existingBox.remove();
+
+            const box = document.createElement('div');
+            box.id = 'message-box';
+            box.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            box.innerHTML = `
+                <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
+                    <p class="text-xl font-semibold text-gray-800 mb-4">${message}</p>
+                    <button class="px-4 py-2 bg-[#a0522d] text-white rounded-lg hover:bg-[#8b4513] transition" onclick="document.getElementById('message-box').remove()">
+                        确定
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(box);
+        }
+
+        /** 显示错误信息 */
+        function renderError(message) {
+            const html = `
+                <h1 class="text-4xl font-bold text-red-600 mb-6 text-center">诊断错误</h1>
+                <p class="text-lg text-gray-700 mb-8 text-center">${message}</p>
+                <button onclick="window.location.reload()" class="w-full py-3 bg-red-500 text-white font-bold text-xl rounded-lg shadow-lg hover:bg-red-600 transition duration-300">
+                    重新开始
+                </button>
+            `;
+            document.getElementById('content-area').innerHTML = html;
+        }
+
+        // ----------------------------------------------------
+        // 4. 初始化 (INITIALIZATION)
+        // ----------------------------------------------------
+
+        // 页面加载完成后启动应用
+        window.onload = function() {
+            renderIntro();
+        };
+
+    </script>
+</body>
+</html>
